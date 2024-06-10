@@ -33,6 +33,12 @@ void RobotKinematicsProvider::_callback_desired_pose(const geometry_msgs::PoseSt
     desired_pose_ = geometry_msgs_pose_to_dq(msg->pose);
 }
 
+void RobotKinematicsProvider::_callback_desired_pose_derivative(const std_msgs::Float64MultiArray::ConstPtr& msg)
+{
+    desired_pose_derivative_ = std_vector_double_to_dq(msg.data);
+}
+
+
 void RobotKinematicsProvider::_callback_desired_interpolator_speed(const std_msgs::Float64::ConstPtr &msg)
 {
     desired_interpolator_speed_ = std_msgs_float64_to_double(*msg);
@@ -62,6 +68,7 @@ RobotKinematicsProvider::RobotKinematicsProvider(ros::NodeHandle &nodehandle_pub
     publisher_reference_frame_ = nodehandle_publisher.advertise<geometry_msgs::PoseStamped>(topic_prefix + "/get/reference_frame", 1);
 
     subscriber_desired_pose_ = nodehandle_subscriber.subscribe(topic_prefix + "/set/desired_pose", 1, &RobotKinematicsProvider::_callback_desired_pose, this);
+    subscriber_desired_pose_derivative_ = nodehandle_subscriber.subscribe(topic_prefix + "/set/desired_pose_derivative", 1, &RobotKinematicsProvider::_callback_desired_pose_derivative, this);
     subscriber_desired_interpolator_speed_ = nodehandle_subscriber.subscribe(topic_prefix + "/set/desired_interpolator_speed", 1, &RobotKinematicsProvider::_callback_desired_interpolator_speed, this);
 }
 
@@ -69,6 +76,12 @@ bool RobotKinematicsProvider::is_enabled() const
 {
     return is_unit(desired_pose_);
 }
+
+bool is_pose_derivative_enabled() const
+{
+    return static_cast<double>(desired_pose_derivative_.norm()) >= DQ_threshold;
+}
+
 
 DQ RobotKinematicsProvider::get_desired_pose() const
 {
@@ -81,6 +94,20 @@ DQ RobotKinematicsProvider::get_desired_pose() const
         throw std::runtime_error(ros::this_node::getName() + "::Trying to get_desired_pose of an unitialized RobotKinematicsProvider.");
     }
 }
+
+DQ RobotKinematicsProvider::get_desired_pose_derivative() const
+{
+    if(is_pose_derivative_enabled())
+    {
+        return desired_pose_derivative_;
+    }
+    else
+    {
+        throw std::runtime_error(ros::this_node::getName() + "::Trying to get_desired_pose_derivative of an unitialized RobotKinematicsProvider.");
+    }
+
+}
+
 
 double RobotKinematicsProvider::get_desired_interpolator_speed() const
 {

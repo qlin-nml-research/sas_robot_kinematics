@@ -49,10 +49,13 @@ protected:
 
     ros::Subscriber subscriber_desired_pose_;
     DQ desired_pose_;
+    ros::Subscriber subscriber_desired_pose_derivative_;
+    DQ desired_pose_derivative_;
     ros::Subscriber subscriber_desired_interpolator_speed_;
     double desired_interpolator_speed_;
 
     void _callback_desired_pose(const geometry_msgs::PoseStamped::ConstPtr& msg);
+    void _callback_desired_pose_derivative(const std_msgs::Float64MultiArray::ConstPtr& msg);
     void _callback_desired_interpolator_speed(const std_msgs::Float64::ConstPtr& msg);
 public:
     RobotKinematicsProvider()=delete;
@@ -65,9 +68,11 @@ public:
     RobotKinematicsProvider(ros::NodeHandle& node_handle_publisher, ros::NodeHandle& node_handle_subscriber, const std::string& topic_prefix);
 
     DQ get_desired_pose() const;
+    DQ get_desired_pose_derivative() const;
     double get_desired_interpolator_speed() const;
 
     bool is_enabled() const;
+    bool is_pose_derivative_enabled() const;
 
     void send_pose(const DQ& pose) const;
     void send_reference_frame(const DQ& reference_frame) const;

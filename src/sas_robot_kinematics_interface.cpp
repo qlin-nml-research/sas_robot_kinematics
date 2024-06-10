@@ -66,6 +66,7 @@ RobotKinematicsInterface::RobotKinematicsInterface(ros::NodeHandle &node_handle_
     subscriber_pose_ = node_handle_subscriber.subscribe(topic_prefix + "/get/pose", 1, &RobotKinematicsInterface::_callback_pose, this);
     subscriber_reference_frame_ = node_handle_subscriber.subscribe(topic_prefix + "/get/reference_frame", 1, &RobotKinematicsInterface::_callback_reference_frame, this);
     publisher_desired_pose_ = node_handle_publisher.advertise<geometry_msgs::PoseStamped>(topic_prefix + "/set/desired_pose", 1);
+    publisher_desired_pose_derivative_ = node_handle_publisher.advertise<std_msgs::Float64MultiArray>(topic_prefix + "/set/desired_pose_derivative", 1);
     publisher_desired_interpolator_speed_ = node_handle_publisher.advertise<std_msgs::Float64>(topic_prefix + "/set/desired_interpolator_speed", 1);
 }
 
@@ -101,6 +102,26 @@ void RobotKinematicsInterface::send_desired_pose(const DQ &desired_pose) const
 {
     publisher_desired_pose_.publish(dq_to_geometry_msgs_pose_stamped(desired_pose));
 }
+
+void RobotKinematicsInterface::send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative)
+{
+    if(desired_pose_derivative!=DQ(0))
+    {
+        std_msgs::Float64MultiArray msg;
+        // set up dimensions
+        msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+        msg.layout.dim[0].size = 8;
+        msg.layout.dim[0].stride = 1;
+        msg.layout.dim[0].label = "x"; // or whatever name you typically use to index vec1
+
+        // copy in the data
+        msg.data.clear();
+        msg.data = sas_conversion::vectorxd_to_std_vector_double(desired_pose_derivative.vec8());
+        publisher_desired_pose_derivative_.publish(msg);
+    }
+    send_desired_pose(desired_pose);
+}
+
 
 void RobotKinematicsInterface::send_desired_interpolator_speed(const double &interpolator_speed) const
 {

@@ -39,14 +39,17 @@ PYBIND11_MODULE(_sas_robot_kinematics, m) {
             .def("is_enabled",&RKI::is_enabled)
             .def("get_pose",&RKI::get_pose)
             .def("get_reference_frame",&RKI::get_reference_frame)
-            .def("send_desired_pose",&RKI::send_desired_pose)
+            .def("send_desired_pose",py::overload_cast<const DQ &>, &RKI::send_desired_pose)
+            .def("send_desired_pose",py::overload_cast<const DQ &, const DQ &>, &RKI::send_desired_pose)
             .def("send_desired_interpolator_speed",&RKI::send_desired_interpolator_speed);
 
     py::class_<RKP>(m, "RobotKinematicsProvider")
             .def(py::init<const std::string&>())
             .def("get_desired_pose",&RKP::get_desired_pose)
+            .def("get_desired_pose_derivative",&RKP::get_desired_pose_derivative)
             .def("get_desired_interpolator_speed",&RKP::get_desired_interpolator_speed)
             .def("is_enabled",&RKP::is_enabled)
+            .def("is_pose_derivative_enabled",&RKP::is_pose_derivative_enabled)
             .def("send_pose",&RKP::send_pose)
             .def("send_reference_frame",&RKP::send_reference_frame);
 

@@ -45,6 +45,7 @@ private:
     DQ reference_frame_;
 
     ros::Publisher publisher_desired_pose_;
+    ros::Publisher publisher_desired_pose_derivative_;  //
     ros::Publisher publisher_desired_interpolator_speed_;
 
     void _callback_pose(const geometry_msgs::PoseStamped::ConstPtr& msg);
@@ -63,6 +64,7 @@ public:
     DQ get_pose() const;
     DQ get_reference_frame() const;
     void send_desired_pose(const DQ& desired_pose) const;
+    void send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative) const;
     void send_desired_interpolator_speed(const double& interpolator_speed) const;
 };
 }
