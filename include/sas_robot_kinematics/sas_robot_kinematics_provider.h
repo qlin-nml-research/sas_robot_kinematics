@@ -32,6 +32,7 @@
 
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
 
 using namespace DQ_robotics;
 

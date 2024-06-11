@@ -35,7 +35,7 @@ void RobotKinematicsProvider::_callback_desired_pose(const geometry_msgs::PoseSt
 
 void RobotKinematicsProvider::_callback_desired_pose_derivative(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-    desired_pose_derivative_ = std_vector_double_to_dq(msg.data);
+    desired_pose_derivative_ = std_vector_double_to_dq(msg->data);
 }
 
 
@@ -77,7 +77,7 @@ bool RobotKinematicsProvider::is_enabled() const
     return is_unit(desired_pose_);
 }
 
-bool is_pose_derivative_enabled() const
+bool RobotKinematicsProvider::is_pose_derivative_enabled() const
 {
     return static_cast<double>(desired_pose_derivative_.norm()) >= DQ_threshold;
 }

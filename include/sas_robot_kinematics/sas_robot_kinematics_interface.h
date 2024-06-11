@@ -28,6 +28,7 @@
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <dqrobotics/DQ.h>
 using namespace DQ_robotics;
 
@@ -64,6 +65,7 @@ public:
     DQ get_pose() const;
     DQ get_reference_frame() const;
     void send_desired_pose(const DQ& desired_pose) const;
+    // void send_desired_pose_w_pose_derivative(const DQ& desired_pose, const DQ& desired_pose_derivative) const;
     void send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative) const;
     void send_desired_interpolator_speed(const double& interpolator_speed) const;
 };

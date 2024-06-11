@@ -103,20 +103,23 @@ void RobotKinematicsInterface::send_desired_pose(const DQ &desired_pose) const
     publisher_desired_pose_.publish(dq_to_geometry_msgs_pose_stamped(desired_pose));
 }
 
-void RobotKinematicsInterface::send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative)
+// void RobotKinematicsInterface::send_desired_pose_w_pose_derivative(const DQ& desired_pose, const DQ& desired_pose_derivative) const
+void RobotKinematicsInterface::send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative) const
 {
     if(desired_pose_derivative!=DQ(0))
     {
         std_msgs::Float64MultiArray msg;
         // set up dimensions
-        msg.layout.dim.push_back(std_msgs::MultiArrayDimension());
+        msg.layout.dim.clear();
+        msg.layout.dim.reserve(1);
+        msg.layout.dim.emplace_back();
         msg.layout.dim[0].size = 8;
         msg.layout.dim[0].stride = 1;
         msg.layout.dim[0].label = "x"; // or whatever name you typically use to index vec1
 
         // copy in the data
         msg.data.clear();
-        msg.data = sas_conversion::vectorxd_to_std_vector_double(desired_pose_derivative.vec8());
+        msg.data = vectorxd_to_std_vector_double(desired_pose_derivative.vec8());
         publisher_desired_pose_derivative_.publish(msg);
     }
     send_desired_pose(desired_pose);

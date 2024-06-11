@@ -34,13 +34,18 @@ using RKP = sas::RobotKinematicsProvider;
 
 PYBIND11_MODULE(_sas_robot_kinematics, m) {
 
+    void (RKI::*send_desired_pose_py)(const DQ&) const = &RKI::send_desired_pose;
+    void (RKI::*send_desired_pose_w_d_py)(const DQ&, const DQ&) const = &RKI::send_desired_pose;
+
     py::class_<RKI>(m, "RobotKinematicsInterface")
             .def(py::init<const std::string&>())
             .def("is_enabled",&RKI::is_enabled)
             .def("get_pose",&RKI::get_pose)
-            .def("get_reference_frame",&RKI::get_reference_frame)
-            .def("send_desired_pose",py::overload_cast<const DQ &>, &RKI::send_desired_pose)
-            .def("send_desired_pose",py::overload_cast<const DQ &, const DQ &>, &RKI::send_desired_pose)
+            // .def("get_reference_frame",&RKI::get_reference_frame)
+            .def("send_desired_pose",send_desired_pose_py, py::arg("xd"))
+            // .def("send_desired_pose",&RKI::send_desired_pose)
+            .def("send_desired_pose", send_desired_pose_w_d_py, py::arg("xd"), py::arg("xd_dot"))
+            // .def("send_desired_pose_w_pose_derivative", &RKI::send_desired_pose_w_pose_derivative)
             .def("send_desired_interpolator_speed",&RKI::send_desired_interpolator_speed);
 
     py::class_<RKP>(m, "RobotKinematicsProvider")
