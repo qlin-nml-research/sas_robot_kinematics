@@ -34,6 +34,18 @@ void RobotKinematicsServer::_callback_desired_pose(const geometry_msgs::msg::Pos
     desired_pose_ = geometry_msgs_pose_to_dq(msg.pose);
 }
 
+void RobotKinematicsServer::_callback_desired_pose_derivative(const geometry_msgs::msg::PoseStamped &msg)
+{
+    if (!is_unit(desired_pose_))
+    {
+        // throw std::runtime_error("::Trying to set desired_pose_derivative without setting desired_pose first.");
+        return; // Ignore the message
+    }
+    const DQ t_dot = DQ(msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+    const DQ r_dot = DQ(msg.pose.orientation.w, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z);
+    desired_pose_derivative_ = compose_ff_pose_dot(translation(desired_pose_), t_dot, rotation(desired_pose_), r_dot);
+}
+
 void RobotKinematicsServer::_callback_desired_interpolator_speed(const sas_msgs::msg::Float64 &msg)
 {
     desired_interpolator_speed_ = std_msgs_float64_to_double(msg);
@@ -52,7 +64,8 @@ RobotKinematicsServer::RobotKinematicsServer(const std::shared_ptr<Node> &node, 
     node_(node),
     enabled_(false),
     topic_prefix_(topic_prefix),
-    desired_pose_(0)
+    desired_pose_(0),
+    desired_pose_derivative_(0)
 {
     //ROS_INFO_STREAM(ros::this_node::getName() + "::Initializing RobotKinematicsProvider with prefix " + topic_prefix);
     RCLCPP_INFO_STREAM(node_->get_logger(),"::Initializing "+get_class_name()+" with prefix " + topic_prefix);
@@ -66,6 +79,9 @@ RobotKinematicsServer::RobotKinematicsServer(const std::shared_ptr<Node> &node, 
     subscriber_desired_pose_ = node->create_subscription<geometry_msgs::msg::PoseStamped>(
                 topic_prefix + "/set/desired_pose", 1, std::bind(&RobotKinematicsServer::_callback_desired_pose, this, _1)
                 );
+    subscriber_desired_pose_derivative_ = node->create_subscription<geometry_msgs::msg::PoseStamped>(
+            topic_prefix + "/set/desired_pose_derivative", 1, std::bind(&RobotKinematicsServer::_callback_desired_pose_derivative, this, _1)
+            );
     //subscriber_desired_interpolator_speed_ = nodehandle_subscriber.subscribe(topic_prefix + "/set/desired_interpolator_speed", 1, &RobotKinematicsProvider::_callback_desired_interpolator_speed, this);
     subscriber_desired_interpolator_speed_ = node->create_subscription<sas_msgs::msg::Float64>(
                 topic_prefix + "/set/desired_interpolator_speed", 1, std::bind(&RobotKinematicsServer::_callback_desired_interpolator_speed, this, _1)
@@ -89,6 +105,20 @@ DQ RobotKinematicsServer::get_desired_pose() const
     }
 }
 
+DQ RobotKinematicsServer::get_desired_pose_derivative() const
+{
+    if(is_enabled() || desired_pose_derivative_ != 0)
+    {
+        return desired_pose_derivative_;
+    }
+    else
+    {
+        throw std::runtime_error("::Trying to get_desired_pose_derivative of an unitialized "+get_class_name()+" or without setting desired_pose first.");
+    }
+
+}
+
+
 double RobotKinematicsServer::get_desired_interpolator_speed() const
 {
     return desired_interpolator_speed_;
@@ -103,6 +133,38 @@ void RobotKinematicsServer::send_reference_frame(const DQ &reference_frame) cons
 {
     publisher_reference_frame_->publish(sas::dq_to_geometry_msgs_pose_stamped(reference_frame));
 }
+
+
+/**
+ * @brief Compose feedforward pose derivative term
+ * @param t
+ * @param t_dot
+ * @param r
+ * @param r_dot
+ * @return x_dot
+ */
+DQ RobotKinematicsServer::compose_ff_pose_dot(const DQ& t, const DQ& t_dot, const DQ& r, const DQ& r_dot){
+    const auto x = r + 0.5 * E_ * t * r;
+    const auto x_dot = r_dot + 0.5 * E_ * (t_dot * r + t * r_dot);
+    return x_dot;
+}
+
+/**
+ * @brief Decompose feedforward pose and pose derivative into translation and rotation
+ * @param x
+ * @param x_dot
+ * @return
+ */
+std::tuple<DQ, DQ, DQ, DQ> RobotKinematicsServer::decompose_ff_pose_dot(const DQ& x, const DQ& x_dot)
+{
+    const auto r = P(x);
+    const auto t = translation(x);
+
+    const auto r_dot = P(x_dot);
+    const auto t_dot = 2 * (D(x_dot) - D(x) * conj(P(x)) * r_dot) * conj(P(x));
+    return {t, t_dot, r, r_dot};
+}
+
 
 }
 

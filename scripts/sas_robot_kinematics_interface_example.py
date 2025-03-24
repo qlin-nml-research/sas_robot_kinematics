@@ -7,7 +7,7 @@ import time
 from dqrobotics import *  # Despite what PyCharm might say, this is very much necessary or DQs will not be recognized
 
 from sas_common import rclcpp_init, rclcpp_Node, rclcpp_spin_some
-from sas_robot_kinematics import RobotKinematicsClient, RobotKinematicsServer
+from sas_robot_kinematics import RobotKinematicsClient, RobotKinematicsServer, compose_pose_dot, decompose_pose_dot
 
 try:
     # Initialize rclcpp
@@ -33,6 +33,15 @@ try:
     # Read the values sent by the RobotKinematicsServer
     print(rki.get_pose())
     print(rki.get_reference_frame())
+
+    while True:
+        rki.send_desired_pose(DQ([1]), DQ([0.1]))
+        rclcpp_spin_some(node)
+        print("desired_pose", rkp.get_desired_pose())
+        print("desired_pose_derivative", rkp.get_desired_pose_derivative())
+        time.sleep(1)
+
+
 
 except KeyboardInterrupt:
     print("Interrupted by user")

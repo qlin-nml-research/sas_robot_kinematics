@@ -41,15 +41,19 @@ PYBIND11_MODULE(_sas_robot_kinematics, m) {
             .def("is_enabled",&RKC::is_enabled)
             .def("get_pose",&RKC::get_pose)
             .def("get_reference_frame",&RKC::get_reference_frame)
-            .def("send_desired_pose",&RKC::send_desired_pose)
+            .def("send_desired_pose",&RKC::send_desired_pose, py::arg("desired_pose"), py::arg("desired_pose_derivative")=DQ(0))
             .def("send_desired_interpolator_speed",&RKC::send_desired_interpolator_speed);
 
     py::class_<RKS>(m, "RobotKinematicsServer")
             .def(py::init<const std::shared_ptr<rclcpp::Node>&,const std::string&>())
             .def("get_desired_pose",&RKS::get_desired_pose)
+            .def("get_desired_pose_derivative",&RKS::get_desired_pose_derivative)
             .def("get_desired_interpolator_speed",&RKS::get_desired_interpolator_speed)
             .def("is_enabled",&RKS::is_enabled)
             .def("send_pose",&RKS::send_pose)
             .def("send_reference_frame",&RKS::send_reference_frame);
+
+    m.def("compose_pose_dot", &RKS::compose_ff_pose_dot, "Compose feedforward pose derivative term");
+    m.def("decompose_pose_dot", &RKS::decompose_ff_pose_dot, "Decompose feedforward pose derivative term");
 
 }

@@ -51,10 +51,13 @@ protected:
 
     Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr subscriber_desired_pose_;
     DQ desired_pose_;
+    Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr subscriber_desired_pose_derivative_;
+    DQ desired_pose_derivative_;
     Subscription<sas_msgs::msg::Float64>::SharedPtr subscriber_desired_interpolator_speed_;
     double desired_interpolator_speed_;
 
     void _callback_desired_pose(const geometry_msgs::msg::PoseStamped& msg);
+    void _callback_desired_pose_derivative(const geometry_msgs::msg::PoseStamped& msg);
     void _callback_desired_interpolator_speed(const sas_msgs::msg::Float64& msg);
 public:
     RobotKinematicsServer()=delete;
@@ -66,12 +69,18 @@ public:
     RobotKinematicsServer(const std::shared_ptr<Node>& node, const std::string& topic_prefix);
 
     DQ get_desired_pose() const;
+    DQ get_desired_pose_derivative() const;
+
     double get_desired_interpolator_speed() const;
 
     bool is_enabled() const;
 
     void send_pose(const DQ& pose) const;
     void send_reference_frame(const DQ& reference_frame) const;
+
+    //helper function
+    static DQ compose_ff_pose_dot(const DQ& t, const DQ& t_dot, const DQ& r, const DQ& r_dot);
+    static std::tuple<DQ, DQ, DQ, DQ> decompose_ff_pose_dot(const DQ& x, const DQ& x_dot);
 
 };
 

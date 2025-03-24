@@ -66,6 +66,7 @@ RobotKinematicsClient::RobotKinematicsClient(const std::shared_ptr<Node> &node, 
 
     //publisher_desired_pose_ = node_handle_publisher.advertise<geometry_msgs::PoseStamped>(topic_prefix + "/set/desired_pose", 1);
     publisher_desired_pose_ = node->create_publisher<geometry_msgs::msg::PoseStamped>(topic_prefix + "/set/desired_pose",1);
+    publisher_desired_pose_derivative_ = node->create_publisher<geometry_msgs::msg::PoseStamped>(topic_prefix + "/set/desired_pose_derivative",1);
     //publisher_desired_interpolator_speed_ = node_handle_publisher.advertise<std_msgs::Float64>(topic_prefix + "/set/desired_interpolator_speed", 1);
     publisher_desired_interpolator_speed_ = node->create_publisher<sas_msgs::msg::Float64>(topic_prefix + "/set/desired_interpolator_speed",1);
 
@@ -108,15 +109,65 @@ DQ RobotKinematicsClient::get_reference_frame() const
         throw std::runtime_error("::"+get_class_name()+"::get_reference_frame()::trying to get reference frame but uninitialized.");
 }
 
-void RobotKinematicsClient::send_desired_pose(const DQ &desired_pose) const
+void RobotKinematicsClient::send_desired_pose(const DQ &desired_pose, const DQ& desired_pose_derivative) const
 {
     publisher_desired_pose_->publish(dq_to_geometry_msgs_pose_stamped(desired_pose));
+    if (desired_pose_derivative!=0)
+    {
+        const auto [t, t_dot, r, r_dot] = decompose_ff_pose_dot(desired_pose, desired_pose_derivative);
+        geometry_msgs::msg::PoseStamped msg;
+        msg.header = std_msgs::msg::Header();
+        msg.pose.position = geometry_msgs::msg::Point();
+        msg.pose.position.x=t_dot.q[1];
+        msg.pose.position.y=t_dot.q[2];
+        msg.pose.position.z=t_dot.q[3];
+        msg.pose.orientation = geometry_msgs::msg::Quaternion();
+        msg.pose.orientation.w=r_dot.q[0];
+        msg.pose.orientation.x=r_dot.q[1];
+        msg.pose.orientation.y=r_dot.q[2];
+        msg.pose.orientation.z=r_dot.q[3];
+        publisher_desired_pose_derivative_->publish(msg);
+    }
+
 }
 
 void RobotKinematicsClient::send_desired_interpolator_speed(const double &interpolator_speed) const
 {
     publisher_desired_interpolator_speed_->publish(double_to_std_msgs_float64(interpolator_speed));
 }
+
+
+/**
+ * @brief Compose feedforward pose derivative term
+ * @param t
+ * @param t_dot
+ * @param r
+ * @param r_dot
+ * @return x_dot
+ */
+DQ RobotKinematicsClient::compose_ff_pose_dot(const DQ& t, const DQ& t_dot, const DQ& r, const DQ& r_dot){
+    const auto x = r + 0.5 * E_ * t * r;
+    const auto x_dot = r_dot + 0.5 * E_ * (t_dot * r + t * r_dot);
+    return x_dot;
+}
+
+/**
+ * @brief Decompose feedforward pose and pose derivative into translation and rotation
+ * @param x
+ * @param x_dot
+ * @return
+ */
+std::tuple<DQ, DQ, DQ, DQ> RobotKinematicsClient::decompose_ff_pose_dot(const DQ& x, const DQ& x_dot)
+{
+    const auto r = P(x);
+    const auto t = translation(x);
+
+    const auto r_dot = P(x_dot);
+    const auto t_dot = 2 * (D(x_dot) - D(x) * conj(P(x)) * r_dot) * conj(P(x));
+    return {t, t_dot, r, r_dot};
+}
+
+
 
 }
 

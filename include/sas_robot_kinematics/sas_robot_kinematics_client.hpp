@@ -51,6 +51,8 @@ private:
     DQ reference_frame_;
 
     Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_desired_pose_;
+    Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr publisher_desired_pose_derivative_;
+
     Publisher<sas_msgs::msg::Float64>::SharedPtr publisher_desired_interpolator_speed_;
 
     void _callback_pose(const geometry_msgs::msg::PoseStamped& msg);
@@ -67,7 +69,11 @@ public:
     bool is_enabled() const;
     DQ get_pose() const;
     DQ get_reference_frame() const;
-    void send_desired_pose(const DQ& desired_pose) const;
+    void send_desired_pose(const DQ& desired_pose, const DQ& desired_pose_derivative=DQ(0)) const;
     void send_desired_interpolator_speed(const double& interpolator_speed) const;
+
+    //helper function
+    static DQ compose_ff_pose_dot(const DQ& t, const DQ& t_dot, const DQ& r, const DQ& r_dot);
+    static std::tuple<DQ, DQ, DQ, DQ> decompose_ff_pose_dot(const DQ& x, const DQ& x_dot);
 };
 }
