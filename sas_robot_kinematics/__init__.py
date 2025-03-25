@@ -22,4 +22,5 @@
 #
 # ################################################################
 """
+from dqrobotics import DQ
 from sas_robot_kinematics._sas_robot_kinematics import RobotKinematicsClient, RobotKinematicsServer, compose_pose_dot, decompose_pose_dot
