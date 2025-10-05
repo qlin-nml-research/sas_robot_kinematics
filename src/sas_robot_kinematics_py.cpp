@@ -65,7 +65,7 @@ PYBIND11_MODULE(_sas_robot_kinematics, m) {
             
     py::class_<RKP>(m, "RobotKinematicsProvider")
             .def(py::init<const std::string&>())
-            .def("is_enabled",&RKI::is_enabled)
+            .def("is_enabled",&RKP::is_enabled)
             .def("get_desired_pose",[get_py_dq_from_cpp](const RKP &self)->py::object {
                 return get_py_dq_from_cpp(self.get_desired_pose());
             })
